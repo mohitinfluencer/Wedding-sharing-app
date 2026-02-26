@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, MapPin, Calendar, X, ChevronLeft, ChevronRight, Upload, Maximize2, Users } from 'lucide-react';
 import Link from 'next/link';
+import PremiumYouTubePlayer from '@/components/PremiumYouTubePlayer';
 
 
 export default function WeddingPage() {
@@ -364,7 +365,7 @@ export default function WeddingPage() {
             </section>
 
             {/* ── VIDEO + LIVE SECTIONS (below gallery) ── */}
-            <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 24px 80px' }}>
+            <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 24px 80px' }}>
                 {/* VIDEO SECTION */}
                 {event.youtube_video_id && (
                     <div style={{ marginBottom: 80 }}>
@@ -372,16 +373,12 @@ export default function WeddingPage() {
                             <div style={{ fontSize: 11, color: 'var(--gold)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>The Wedding Film</div>
                             <div style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 300, color: 'var(--cream)' }}>Our Story Forever</div>
                         </div>
-                        <div style={{ position: 'relative', width: '100%', aspectRatio: '16/9', borderRadius: 24, overflow: 'hidden', border: '1px solid var(--border-subtle)', boxShadow: '0 30px 60px -12px rgba(0,0,0,0.5)' }}>
-                            <iframe
-                                width="100%" height="100%"
-                                src={`https://www.youtube.com/embed/${event.youtube_video_id}?autoplay=0&rel=0&modestbranding=1&iv_load_policy=3&showinfo=0&controls=1&color=white`}
-                                title="Wedding Film" frameBorder="0"
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                allowFullScreen
-                                style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
-                            />
-                        </div>
+                        <PremiumYouTubePlayer
+                            videoId={event.youtube_video_id}
+                            title={`${event.groomName} & ${event.brideName}`}
+                            subtitle="Wedding Film"
+                            badge="Wedding Film"
+                        />
                     </div>
                 )}
 
@@ -394,16 +391,13 @@ export default function WeddingPage() {
                             </div>
                             <div style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 300, color: 'var(--cream)' }}>Witness the Union</div>
                         </div>
-                        <div style={{ position: 'relative', width: '100%', aspectRatio: '16/9', borderRadius: 24, overflow: 'hidden', border: '2px solid rgba(239,68,68,0.2)', boxShadow: '0 30px 60px -12px rgba(239,68,68,0.1)' }}>
-                            <iframe
-                                width="100%" height="100%"
-                                src={`https://www.youtube.com/embed/${event.youtube_live_id}?autoplay=1&rel=0&modestbranding=1&iv_load_policy=3&showinfo=0&color=white`}
-                                title="Live Wedding" frameBorder="0"
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                allowFullScreen
-                                style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
-                            />
-                        </div>
+                        <PremiumYouTubePlayer
+                            videoId={event.youtube_live_id}
+                            title={`${event.groomName} & ${event.brideName}`}
+                            subtitle="Live Ceremony"
+                            badge="● LIVE NOW"
+                            isLive
+                        />
                     </div>
                 )}
             </div>

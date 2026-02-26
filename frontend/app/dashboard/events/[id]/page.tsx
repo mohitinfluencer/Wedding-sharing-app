@@ -7,8 +7,12 @@ import toast from 'react-hot-toast';
 import {
     ArrowLeft, Upload, Video, QrCode, Share2, Eye, EyeOff, Star,
     StarOff, Trash2, Plus, ExternalLink, Check, Copy, Play, ImageIcon,
-    Users, Zap, Radio, Grid, List, ChevronDown, X, Heart,
+    Users, Zap, Radio, Grid3X3 as Grid, List, ChevronDown, X, Heart,
+    LayoutGrid, ChevronLeft, Edit2, Film,
 } from 'lucide-react';
+
+import PremiumYouTubePlayer from '@/components/PremiumYouTubePlayer';
+
 import Link from 'next/link';
 import { eventsApi, albumsApi, mediaApi, guestApi, qrApi } from '@/lib/api';
 import { useAuthStore, DEMO_EVENTS, DEMO_MEDIA } from '@/lib/auth-store';
@@ -509,16 +513,13 @@ export default function EventManagerPage() {
                                             <Trash2 size={11} /> Remove
                                         </button>
                                     </div>
-                                    {/* Live YouTube Preview */}
-                                    <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0, borderRadius: 12, overflow: 'hidden', background: '#000' }}>
-                                        <iframe
-                                            src={`https://www.youtube.com/embed/${event.youtube_video_id}?rel=0&modestbranding=1&iv_load_policy=3&showinfo=0&color=white`}
-                                            title="Wedding Film Preview"
-                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                            allowFullScreen
-                                            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
-                                        />
-                                    </div>
+                                    {/* Premium cinematic preview */}
+                                    <PremiumYouTubePlayer
+                                        videoId={event.youtube_video_id}
+                                        title={`${event.groomName} & ${event.brideName}`}
+                                        subtitle="Wedding Film Preview"
+                                        badge="Wedding Film"
+                                    />
                                 </div>
                             )}
                         </div>
