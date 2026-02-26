@@ -174,6 +174,15 @@ export default function EventManagerPage() {
         finally { setDelivering(false); }
     };
 
+    const approveGuest = async (id: string) => {
+        if (isDemoMode) { setGuestUploads(p => p.filter(u => u.id !== id)); toast.success('Published!'); return; }
+        try { await guestApi.approve(id); setGuestUploads(p => p.filter(u => u.id !== id)); loadData(); } catch { toast.error('Failed'); }
+    };
+    const rejectGuest = async (id: string) => {
+        if (isDemoMode) { setGuestUploads(p => p.filter(u => u.id !== id)); return; }
+        try { await guestApi.reject(id); setGuestUploads(p => p.filter(u => u.id !== id)); } catch { toast.error('Failed'); }
+    };
+
     const openLightbox = (i: number) => { setLightbox({ open: true, index: i }); document.body.style.overflow = 'hidden'; };
     const closeLightbox = () => { setLightbox({ open: false, index: 0 }); document.body.style.overflow = ''; };
 
