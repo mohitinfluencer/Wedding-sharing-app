@@ -9,6 +9,8 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import PremiumYouTubePlayer from '@/components/PremiumYouTubePlayer';
+import WeddingWelcomeScreen from '@/components/WeddingWelcomeScreen';
+import GuestMagicMoment from '@/components/GuestMagicMoment';
 
 /* ─── tiny hooks ──────────────────────────────────────────────── */
 function useKeyPress(key: string, fn: () => void, active: boolean) {
@@ -34,6 +36,7 @@ export default function WeddingPage() {
     const [media, setMedia] = useState<any[]>([]);
     const [notFound, setNotFound] = useState(false);
     const [scrollY, setScrollY] = useState(0);
+    const [showWelcome, setShowWelcome] = useState(true);
 
     // Lightbox
     const [lb, setLb] = useState<{ open: boolean; photos: any[]; idx: number }>({
@@ -171,6 +174,17 @@ export default function WeddingPage() {
                     backgroundSize: '180px', opacity: 0.03,
                 }} />
             </div>
+
+            {/* ── Welcome Screen Overlay ── */}
+            <AnimatePresence>
+                {showWelcome && (
+                    <WeddingWelcomeScreen
+                        event={event}
+                        heroImage={heroBg}
+                        onEnter={() => setShowWelcome(false)}
+                    />
+                )}
+            </AnimatePresence>
 
             <div style={{ position: 'relative', zIndex: 1 }}>
 
@@ -633,8 +647,12 @@ export default function WeddingPage() {
                 </section>
 
                 {/* ════════════════════════════════════════════════════
-                ⑥ ENDING CREDITS — Movie-style closing
+                ⑥ GUEST ENGAGEMENT — Find Your Photos & Lead Capture
+                Embedded directly into the story flow
             ════════════════════════════════════════════════════ */}
+                <div style={{ padding: '0 24px 100px' }}>
+                    <GuestMagicMoment event={event} />
+                </div>
                 <motion.footer
                     initial={{ opacity: 0 }}
                     whileInView={{ opacity: 1 }}

@@ -8,16 +8,17 @@ import {
     ArrowLeft, Upload, Video, QrCode, Share2, Eye, EyeOff, Star,
     StarOff, Trash2, Plus, ExternalLink, Check, Copy, Play, ImageIcon,
     Users, Zap, Radio, Grid3X3 as Grid, List, ChevronDown, X, Heart,
-    LayoutGrid, ChevronLeft, Edit2, Film,
+    LayoutGrid, ChevronLeft, Edit2, Film, Sparkles,
 } from 'lucide-react';
 
 import PremiumYouTubePlayer from '@/components/PremiumYouTubePlayer';
+import WeddingQRCodeCard from '@/components/WeddingQRCodeCard';
 
 import Link from 'next/link';
-import { eventsApi, albumsApi, mediaApi, guestApi, qrApi } from '@/lib/api';
+import { eventsApi, albumsApi, mediaApi, guestApi, qrApi, deliveryApi } from '@/lib/api';
 import { useAuthStore, DEMO_EVENTS, DEMO_MEDIA } from '@/lib/auth-store';
 
-type TabId = 'media' | 'albums' | 'video' | 'guests' | 'share';
+type TabId = 'media' | 'albums' | 'video' | 'guests' | 'share' | 'delivery';
 
 export default function EventManagerPage() {
     const { id } = useParams<{ id: string }>();
@@ -40,6 +41,8 @@ export default function EventManagerPage() {
     const [newAlbum, setNewAlbum] = useState('');
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [lightbox, setLightbox] = useState<{ open: boolean; index: number }>({ open: false, index: 0 });
+    const [delivering, setDelivering] = useState(false);
+    const [deliveryStatus, setDeliveryStatus] = useState<any>(null);
 
     const loadData = useCallback(async () => {
         if (isDemoMode) {
@@ -152,13 +155,23 @@ export default function EventManagerPage() {
         try { await albumsApi.create(event.id, { title: newAlbum }); toast.success('Album created'); setNewAlbum(''); loadData(); } catch { toast.error('Failed'); }
     };
     const copyLink = () => { navigator.clipboard.writeText(shareLink); setLinkCopied(true); setTimeout(() => setLinkCopied(false), 2500); toast.success('Link copied!'); };
-    const approveGuest = async (id: string) => {
-        if (isDemoMode) { setGuestUploads(p => p.filter(u => u.id !== id)); toast.success('Published!'); return; }
-        try { await guestApi.approve(id); setGuestUploads(p => p.filter(u => u.id !== id)); loadData(); } catch { toast.error('Failed'); }
-    };
-    const rejectGuest = async (id: string) => {
-        if (isDemoMode) { setGuestUploads(p => p.filter(u => u.id !== id)); return; }
-        try { await guestApi.reject(id); setGuestUploads(p => p.filter(u => u.id !== id)); } catch { toast.error('Failed'); }
+    const handleFinishWedding = async () => {
+        if (!event) return;
+        setDelivering(true);
+        const tid = toast.loading('Studio Assistant is finalizing your wedding...');
+        try {
+            if (isDemoMode) {
+                await new Promise(r => setTimeout(r, 2000));
+                setEvent({ ...event, is_delivered: true, delivered_at: new Date().toISOString() });
+            } else {
+                const updated = await deliveryApi.finishWedding(event.id);
+                setEvent(updated);
+            }
+            toast.dismiss(tid);
+            toast.success('Wedding Delivered Successfully! 🎉');
+            setActiveTab('delivery');
+        } catch { toast.dismiss(tid); toast.error('Failed to deliver'); }
+        finally { setDelivering(false); }
     };
 
     const openLightbox = (i: number) => { setLightbox({ open: true, index: i }); document.body.style.overflow = 'hidden'; };
@@ -186,6 +199,7 @@ export default function EventManagerPage() {
         { id: 'video', label: 'Video', icon: Video },
         { id: 'guests', label: 'Guests', icon: Users, count: guestUploads.length },
         { id: 'share', label: 'Share', icon: Share2 },
+        { id: 'delivery', label: 'Delivery', icon: Zap },
     ];
 
     return (
@@ -609,61 +623,167 @@ export default function EventManagerPage() {
 
                 {/* SHARE TAB */}
                 {activeTab === 'share' && (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 16, maxWidth: 680 }}>
-                        {/* Share link */}
-                        <div style={{ background: 'var(--surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-xl)', padding: 24 }}>
-                            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 300, color: 'var(--cream)', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-                                <Share2 size={14} style={{ color: 'var(--gold)' }} />Share Link
-                            </h3>
-                            <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-                                <input readOnly value={shareLink} style={{ flex: 1, padding: '8px 12px', background: 'var(--surface-2)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-sm)', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', fontSize: 11, outline: 'none' }} />
-                                <button onClick={copyLink} id="copy-link-btn" style={{
-                                    padding: '8px 12px', borderRadius: 'var(--radius-sm)', cursor: 'pointer',
-                                    background: linkCopied ? 'rgba(80,160,100,0.2)' : 'var(--surface-frost)',
-                                    color: linkCopied ? '#7DCEA0' : 'var(--gold)', display: 'flex', alignItems: 'center',
-                                    border: `1px solid ${linkCopied ? 'rgba(80,160,100,0.3)' : 'var(--border-accent)'}`,
-                                    transition: 'all 0.2s',
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 32, maxWidth: 900 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 40, alignItems: 'start' }}>
+                            {/* Invitation Card Section */}
+                            <motion.div
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                            >
+                                <div style={{
+                                    fontSize: 12,
+                                    fontWeight: 700,
+                                    color: 'var(--gold)',
+                                    letterSpacing: '0.15em',
+                                    textTransform: 'uppercase',
+                                    marginBottom: 24,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 10
                                 }}>
-                                    {linkCopied ? <Check size={14} /> : <Copy size={14} />}
-                                </button>
-                            </div>
-                            <Link href={`/wedding/${event.slug}`} target="_blank" style={{ fontSize: 11, color: 'var(--gold)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
-                                <ExternalLink size={11} />Open wedding page
-                            </Link>
-                            <div className="divider" style={{ margin: '16px 0' }} />
-                            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 8, fontWeight: 600 }}>Guest upload link</div>
-                            <div style={{ fontSize: 11, color: 'var(--gold)', wordBreak: 'break-all' }}>
-                                {shareLink}/upload
-                            </div>
-                        </div>
+                                    <Sparkles size={14} /> Premium QR Invitation
+                                </div>
+                                <WeddingQRCodeCard
+                                    event={event}
+                                    qrDataUrl={qrDataUrl}
+                                    isDigitalDisplay={true}
+                                />
+                            </motion.div>
 
-                        {/* QR Code */}
-                        <div style={{ background: 'var(--surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-xl)', padding: 24 }}>
-                            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 300, color: 'var(--cream)', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-                                <QrCode size={14} style={{ color: 'var(--gold)' }} />QR Code
-                            </h3>
-                            {isDemoMode ? (
-                                <div style={{ textAlign: 'center' }}>
-                                    <div style={{ background: '#fff', padding: 16, borderRadius: 12, display: 'inline-flex', marginBottom: 14 }} id="qr-code-img">
-                                        <div style={{ width: 120, height: 120, background: 'var(--charcoal)', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                            <QrCode size={48} style={{ color: '#fff' }} />
-                                        </div>
-                                    </div>
-                                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>QR generation requires backend API</div>
+                            {/* Share Details & Links */}
+                            <motion.div
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.1 }}
+                                style={{ display: 'flex', flexDirection: 'column', gap: 20 }}
+                            >
+                                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 4 }}>
+                                    Sharing Details
                                 </div>
-                            ) : qrDataUrl ? (
-                                <div style={{ textAlign: 'center' }}>
-                                    <div style={{ background: '#fff', padding: 12, borderRadius: 10, display: 'inline-block', marginBottom: 14 }}>
-                                        <img src={qrDataUrl} alt="QR" style={{ width: 120, height: 120 }} id="qr-code-img" />
+
+                                {/* Link box */}
+                                <div style={{ background: 'var(--surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-xl)', padding: 24 }}>
+                                    <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 300, color: 'var(--cream)', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+                                        <Share2 size={14} style={{ color: 'var(--gold)' }} />Live Portal Link
+                                    </h3>
+                                    <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+                                        <input readOnly value={shareLink} style={{ flex: 1, padding: '10px 14px', background: 'var(--surface-2)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', fontSize: 12, outline: 'none' }} />
+                                        <button onClick={copyLink} style={{
+                                            padding: '8px 14px', borderRadius: 'var(--radius-md)', cursor: 'pointer',
+                                            background: linkCopied ? 'rgba(80,160,100,0.2)' : 'var(--surface-frost)',
+                                            color: linkCopied ? '#7DCEA0' : 'var(--gold)', display: 'flex', alignItems: 'center',
+                                            border: `1px solid ${linkCopied ? 'rgba(80,160,100,0.3)' : 'var(--border-accent)'}`,
+                                            transition: 'all 0.2s',
+                                        }}>
+                                            {linkCopied ? <Check size={16} /> : <Copy size={16} />}
+                                        </button>
                                     </div>
-                                    <br />
-                                    <button onClick={() => { const a = document.createElement('a'); a.href = qrDataUrl; a.download = `qr-${event.slug}.png`; a.click(); }} id="download-qr-btn" style={{ padding: '8px 20px', background: 'var(--gold)', border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer', fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--obsidian)' }}>
-                                        Download PNG
-                                    </button>
+                                    <Link href={`/wedding/${event.slug}`} target="_blank" style={{ fontSize: 13, color: 'var(--gold)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6, fontWeight: 500 }}>
+                                        <ExternalLink size={14} /> Open wedding page
+                                    </Link>
                                 </div>
-                            ) : <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--text-muted)', fontSize: 'var(--text-sm)' }}>Loading...</div>}
+
+                                {/* Guest upload link */}
+                                <div style={{ background: 'var(--surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-xl)', padding: 24 }}>
+                                    <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
+                                        <Upload size={14} /> Guest direct upload link
+                                    </div>
+                                    <div style={{
+                                        padding: '12px 14px',
+                                        background: 'rgba(201,151,74,0.05)',
+                                        border: '1px dotted rgba(201,151,74,0.3)',
+                                        borderRadius: 'var(--radius-md)',
+                                        fontSize: 12, color: 'var(--gold)',
+                                        wordBreak: 'break-all',
+                                        fontFamily: 'var(--font-mono, monospace)'
+                                    }}>
+                                        {shareLink}/upload
+                                    </div>
+                                    <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 12, lineHeight: 1.5 }}>
+                                        Share this link with guests who want to upload photos directly without seeing the gallery first.
+                                    </p>
+                                </div>
+                            </motion.div>
                         </div>
                     </div>
+                )}
+
+                {/* ── DELIVERY TAB ── */}
+                {activeTab === 'delivery' && (
+                    <motion.div key="delivery" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} style={{ maxWidth: 840, margin: '0 auto', paddingBottom: 60 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24, alignItems: 'start' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                                {/* Timeline */}
+                                <div style={{ background: 'var(--surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-xl)', padding: 32 }}>
+                                    <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 300, color: 'var(--cream)', marginBottom: 32 }}>Delivery Timeline</h3>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 40, position: 'relative' }}>
+                                        <div style={{ position: 'absolute', left: 11, top: 2, bottom: 2, width: 1, background: 'rgba(255,255,255,0.08)' }} />
+
+                                        {[
+                                            { label: 'Photos Uploaded', desc: `${media.length} cinematic moments ready.`, done: media.length > 0 },
+                                            { label: 'Published to Portal', desc: event.is_delivered ? `Finalized on ${new Date(event.delivered_at).toLocaleDateString()}` : 'The gallery is in draft.', done: event.is_delivered },
+                                            { label: 'Viewed by Couple', desc: event.view_count > 0 ? `The couple has explored the gallery.` : 'Awaiting first reaction.', done: event.view_count > 0 },
+                                            { label: 'Favorites Selected', desc: 'Automatic tracking of hearts for the album.', done: false, pending: true },
+                                        ].map((step, si) => (
+                                            <div key={si} style={{ display: 'flex', gap: 20, position: 'relative', opacity: step.pending ? 0.4 : 1 }}>
+                                                <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'var(--bg-raised)', border: `2px solid ${step.done ? 'var(--gold)' : 'var(--border-muted)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
+                                                    {step.done ? <Check size={12} style={{ color: 'var(--gold)' }} /> : <div style={{ width: 5, height: 5, borderRadius: '50%', background: 'rgba(255,255,255,0.1)' }} />}
+                                                </div>
+                                                <div>
+                                                    <div style={{ fontSize: 13, fontWeight: 600, color: step.done ? '#fff' : 'var(--text-muted)' }}>{step.label}</div>
+                                                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>{step.desc}</div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div style={{ padding: '20px 24px', background: 'rgba(59,130,246,0.05)', border: '1px solid rgba(59,130,246,0.1)', borderRadius: 'var(--radius-lg)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                        <Radio size={18} style={{ color: '#60A5FA' }} />
+                                        <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}><b>Guest Access Manager:</b> Automated portals are active.</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                                <div style={{ background: 'var(--surface-2)', border: '1px solid rgba(201,151,74,0.15)', borderRadius: 'var(--radius-xl)', padding: 24, boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--gold)', marginBottom: 12 }}>
+                                        <Zap size={14} />
+                                        <span style={{ fontSize: 10, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Studio Assistant</span>
+                                    </div>
+                                    <h4 style={{ fontFamily: 'var(--font-display)', color: '#fff', fontSize: 18, marginBottom: 8 }}>Automated Delivery</h4>
+                                    <p style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 24 }}>When you click finish, we'll notify the couple and prepare their high-res downloads automatically.</p>
+
+                                    {!event.is_delivered ? (
+                                        <button onClick={handleFinishWedding} disabled={delivering} style={{ width: '100%', padding: '14px', background: 'var(--gold)', color: 'var(--obsidian)', border: 'none', borderRadius: 12, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', opacity: delivering ? 0.6 : 1 }}>
+                                            {delivering ? 'Finalizing...' : 'Finish & Deliver Wedding'}
+                                        </button>
+                                    ) : (
+                                        <div style={{ padding: '14px', background: 'rgba(80,160,100,0.1)', border: '1px solid rgba(80,160,100,0.2)', borderRadius: 12, color: '#7DCEA0', fontSize: 12, fontWeight: 700, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+                                            <Check size={16} /> DELIVERED
+                                        </div>
+                                    )}
+
+                                    <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-muted)' }}>
+                                            <span>Publish Website</span> <span style={{ color: event.is_delivered ? 'var(--gold)' : 'inherit', fontWeight: 700 }}>AUTO</span>
+                                        </div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-muted)' }}>
+                                            <span>Couple Notification</span> <span style={{ opacity: 0.4 }}>EMAIL + SMS</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div style={{ background: 'var(--surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-xl)', padding: 20 }}>
+                                    <div style={{ fontSize: 13, color: '#fff', marginBottom: 12, fontWeight: 500 }}>Smart Reminders</div>
+                                    <div style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                                        Couple will be reminded to select favorite photos in 7 days if they haven't started.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </motion.div>
                 )}
             </div>
 

@@ -340,3 +340,42 @@ export const analyticsApi = {
     },
     getStudio: async () => invokeFunc('get-studio-analytics', {}),
 };
+// ─── Delivery ───────────────────────────────────────────────────
+export const deliveryApi = {
+    finishWedding: async (eventId: string) => {
+        const { data: updated, error } = await supabase
+            .from('events')
+            .update({
+                status: 'published',
+                is_delivered: true,
+                delivered_at: new Date().toISOString()
+            })
+            .eq('id', eventId)
+            .select()
+            .single();
+        if (error) throw error;
+
+        // Auto-generation logic (simulated for now, would be Edge Functions)
+        // 1. Generate Highlight Album
+        // 2. Enable Guest Downloads
+        // 3. Send Notifications
+
+        return updated;
+    },
+    trackView: async (eventId: string) => {
+        const { error } = await supabase.rpc('increment_view_count', { row_id: eventId });
+        if (error) {
+            // Fallback for demo/dev if RPC doesn't exist
+            await supabase.from('events').update({ viewed_at: new Date().toISOString() }).eq('id', eventId);
+        }
+    },
+    getDeliveryStatus: async (eventId: string) => {
+        const { data, error } = await supabase
+            .from('events')
+            .select('status, is_delivered, delivered_at, viewed_at, visibility')
+            .eq('id', eventId)
+            .single();
+        if (error) throw error;
+        return data;
+    }
+};
