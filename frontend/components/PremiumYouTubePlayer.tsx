@@ -10,6 +10,8 @@ interface PremiumYouTubePlayerProps {
     title?: string;
     /** Optional subtitle / branding line */
     subtitle?: string;
+    /** Optional wedding date for 'Intro Mode' */
+    date?: string;
     /** Custom thumbnail URL — defaults to YouTube maxres thumbnail */
     thumbnailUrl?: string;
     /** Optional badge label, e.g. "Wedding Film" or "LIVE" */
@@ -25,13 +27,12 @@ interface PremiumYouTubePlayerProps {
  *
  * Shows a cinematic thumbnail card first.
  * Only injects the real YouTube iframe when the user clicks Play.
- * Uses modestbranding, no related videos, no IV.
- * No CSS injection into iframe — fully ToS compliant.
  */
 export default function PremiumYouTubePlayer({
     videoId,
     title,
     subtitle,
+    date,
     thumbnailUrl,
     badge,
     isLive = false,
@@ -217,32 +218,58 @@ export default function PremiumYouTubePlayer({
                                 </svg>
                             </div>
 
-                            {/* Labels below play button */}
-                            {(title || subtitle) && (
-                                <div style={{ textAlign: 'center', position: 'relative' }}>
+                            {/* Labels below play button — Movie Poster Style */}
+                            {(title || subtitle || date) && (
+                                <div style={{
+                                    textAlign: 'center',
+                                    position: 'relative',
+                                    marginTop: 8,
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    gap: 2
+                                }}>
+                                    {subtitle && (
+                                        <div style={{
+                                            fontFamily: 'var(--font-ui, "Outfit", sans-serif)',
+                                            fontSize: 'clamp(9px, 1.2vw, 11px)',
+                                            color: '#C9974A',
+                                            letterSpacing: '0.25em',
+                                            textTransform: 'uppercase',
+                                            fontWeight: 700,
+                                            marginBottom: 4,
+                                            opacity: 0.8
+                                        }}>
+                                            {subtitle}
+                                        </div>
+                                    )}
                                     {title && (
                                         <div style={{
                                             fontFamily: 'var(--font-display, "Fraunces", serif)',
-                                            fontSize: 'clamp(14px, 2.5vw, 22px)',
+                                            fontSize: 'clamp(20px, 4vw, 36px)',
                                             fontWeight: 300,
                                             color: '#F5F0E8',
-                                            letterSpacing: '-0.01em',
-                                            marginBottom: 4,
-                                            textShadow: '0 2px 16px rgba(0,0,0,0.7)',
+                                            letterSpacing: '-0.02em',
+                                            lineHeight: 1.1,
+                                            textShadow: '0 4px 20px rgba(0,0,0,0.8)',
                                         }}>
                                             {title}
                                         </div>
                                     )}
-                                    {subtitle && (
+                                    {date && (
                                         <div style={{
                                             fontFamily: 'var(--font-ui, "Outfit", sans-serif)',
-                                            fontSize: 'clamp(10px, 1.5vw, 13px)',
-                                            color: 'rgba(201,151,74,0.85)',
-                                            letterSpacing: '0.08em',
-                                            textTransform: 'uppercase',
-                                            textShadow: '0 1px 8px rgba(0,0,0,0.8)',
+                                            fontSize: 'clamp(10px, 1.4vw, 13px)',
+                                            color: 'rgba(245,240,232,0.6)',
+                                            letterSpacing: '0.04em',
+                                            marginTop: 6,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 8
                                         }}>
-                                            {subtitle}
+                                            <span style={{ width: 12, height: 1, background: 'rgba(201,151,74,0.3)' }} />
+                                            {date}
+                                            <span style={{ width: 12, height: 1, background: 'rgba(201,151,74,0.3)' }} />
                                         </div>
                                     )}
                                 </div>
