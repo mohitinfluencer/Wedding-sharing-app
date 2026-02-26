@@ -11,6 +11,7 @@ import Link from 'next/link';
 import PremiumYouTubePlayer from '@/components/PremiumYouTubePlayer';
 import WeddingWelcomeScreen from '@/components/WeddingWelcomeScreen';
 import GuestMagicMoment from '@/components/GuestMagicMoment';
+import MediaDownloadSystem from '@/components/MediaDownloadSystem';
 
 /* ─── tiny hooks ──────────────────────────────────────────────── */
 function useKeyPress(key: string, fn: () => void, active: boolean) {
@@ -582,6 +583,17 @@ export default function WeddingPage() {
                     </div>
                 )}
 
+                {/* ── GLOBAL DOWNLOAD SECTION ── */}
+                {photos.length > 0 && (
+                    <section style={{ padding: '40px 24px', display: 'flex', justifyContent: 'center' }}>
+                        <MediaDownloadSystem
+                            albumMedia={photos}
+                            albumName={`${event.groomName}_and_${event.brideName}_Wedding`}
+                            variant="button"
+                        />
+                    </section>
+                )}
+
                 {/* ════════════════════════════════════════════════════
                 ⑤ GUEST MEMORY SECTION — Emotional Upload Hook
             ════════════════════════════════════════════════════ */}
@@ -772,6 +784,12 @@ export default function WeddingPage() {
                                 />
                             </AnimatePresence>
                             <button onClick={closeLb} style={btnStyle({ top: 20, right: 20 })}><X size={18} /></button>
+
+                            {/* Lightbox Download Button */}
+                            <div style={{ position: 'absolute', top: 20, right: 68 }} onClick={e => e.stopPropagation()}>
+                                <MediaDownloadSystem media={lb.photos[lb.idx]} variant="icon" />
+                            </div>
+
                             {lb.photos.length > 1 && <>
                                 <button onClick={e => { e.stopPropagation(); lbPrev(); }} style={btnStyle({ left: 16, top: '50%', transform: 'translateY(-50%)' })}><ChevronLeft size={22} /></button>
                                 <button onClick={e => { e.stopPropagation(); lbNext(); }} style={btnStyle({ right: 16, top: '50%', transform: 'translateY(-50%)' })}><ChevronRight size={22} /></button>
@@ -990,10 +1008,18 @@ function ChapterRow({ title, chapterNum, photos, onPhotoClick, animDelay }: Chap
                             />
                             {/* Highlight star */}
                             {photo.highlight && (
-                                <div style={{ position: 'absolute', top: 8, right: 8 }}>
+                                <div style={{ position: 'absolute', top: 8, right: 8, zIndex: 5 }}>
                                     <Heart size={14} style={{ color: '#C9974A', fill: '#C9974A', filter: 'drop-shadow(0 1px 4px rgba(0,0,0,0.7))' }} />
                                 </div>
                             )}
+
+                            {/* Download Icon */}
+                            <div
+                                style={{ position: 'absolute', bottom: 8, left: 8, zIndex: 10 }}
+                                onClick={e => e.stopPropagation()}
+                            >
+                                <MediaDownloadSystem media={photo} variant="icon" />
+                            </div>
                         </motion.div>
                     ))}
                 </div>
