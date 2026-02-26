@@ -1,0 +1,14 @@
+{
+  "name": "wedding-sharing-app",
+  "version": "1.0.0",
+  "description": "Wedding Sharing App - Combined Workspace",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently -n \"frontend,backend\" -c \"cyan,magenta\" \"npm run dev --prefix frontend\" \"npm run start:dev --prefix backend\"",
+    "build": "npm run build --prefix frontend && npm run build --prefix backend",
+    "install:all": "npm install --prefix frontend && npm install --prefix backend"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
