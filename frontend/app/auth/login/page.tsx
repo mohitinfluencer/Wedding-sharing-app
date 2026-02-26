@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import { ArrowRight, Eye, EyeOff, Zap } from 'lucide-react';
+import { ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { useAuthStore } from '@/lib/auth-store';
 
 export default function LoginPage() {
@@ -13,7 +13,7 @@ export default function LoginPage() {
     const [showPw, setShowPw] = useState(false);
     const [loading, setLoading] = useState(false);
     const [mounted, setMounted] = useState(false);
-    const { login, loginAsDemo } = useAuthStore();
+    const { login } = useAuthStore();
     const router = useRouter();
 
     useEffect(() => { setTimeout(() => setMounted(true), 60); }, []);
@@ -27,11 +27,9 @@ export default function LoginPage() {
             toast.success('Welcome back');
             router.push('/dashboard');
         } catch (err: any) {
-            toast.error(err?.response?.data?.message || 'Invalid credentials');
+            toast.error(err?.message || 'Invalid credentials');
         } finally { setLoading(false); }
     };
-
-    const handleDemo = () => { loginAsDemo(); router.push('/dashboard'); };
 
     return (
         <div style={{ minHeight: '100dvh', background: 'var(--obsidian)', display: 'flex' }}>
@@ -200,33 +198,11 @@ export default function LoginPage() {
                     </form>
 
                     {/* Divider */}
-                    <div className="divider-text" style={{ margin: '28px 0' }}>or</div>
+                    <div className="divider-text" style={{ margin: '28px 0' }}>New here?</div>
 
-                    {/* Demo button */}
-                    <button
-                        id="demo-login-btn" onClick={handleDemo}
-                        style={{
-                            width: '100%', padding: '12px',
-                            background: 'var(--surface-frost)',
-                            border: '1px solid var(--border-accent)',
-                            borderRadius: 'var(--radius-md)',
-                            color: 'var(--gold-light)',
-                            fontFamily: 'var(--font-ui)',
-                            fontSize: 'var(--text-sm)',
-                            fontWeight: 500,
-                            cursor: 'pointer',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                            transition: 'background 0.2s, box-shadow 0.2s',
-                        }}
-                        onMouseEnter={e => { (e.target as HTMLButtonElement).style.background = 'rgba(201,151,74,0.12)'; (e.target as HTMLButtonElement).style.boxShadow = 'var(--shadow-gold)'; }}
-                        onMouseLeave={e => { (e.target as HTMLButtonElement).style.background = 'var(--surface-frost)'; (e.target as HTMLButtonElement).style.boxShadow = 'none'; }}
-                    >
-                        <Zap size={14} />
-                        Continue as Demo — No setup needed
-                    </button>
-                    <p style={{ textAlign: 'center', fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginTop: 8 }}>
-                        Explore with pre-loaded sample wedding data
-                    </p>
+                    <Link href="/auth/signup" style={{ display: 'block', textAlign: 'center', padding: '12px', background: 'var(--surface-frost)', border: '1px solid var(--border-accent)', borderRadius: 'var(--radius-md)', color: 'var(--gold-light)', fontFamily: 'var(--font-ui)', fontSize: 'var(--text-sm)', fontWeight: 500, textDecoration: 'none' }}>
+                        Create a studio account
+                    </Link>
 
                     <p style={{ textAlign: 'center', fontSize: 'var(--text-sm)', color: 'var(--text-muted)', marginTop: 32 }}>
                         New photographer?{' '}

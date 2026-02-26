@@ -6,20 +6,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, MapPin, Calendar, X, ChevronLeft, ChevronRight, Upload, Maximize2, Users } from 'lucide-react';
 import Link from 'next/link';
 
-// Demo data for direct access without backend
-import { DEMO_EVENTS, DEMO_MEDIA } from '@/lib/auth-store';
-
-const SLUG_MAP: Record<string, any> = {
-    'rahul-priya-2026': { event: DEMO_EVENTS[0], media: DEMO_MEDIA },
-    'arjun-sneha-2026': { event: DEMO_EVENTS[1], media: DEMO_MEDIA.slice(0, 6) },
-    'vikram-isha-2026': { event: DEMO_EVENTS[2], media: [] },
-};
 
 export default function WeddingPage() {
     const { slug } = useParams<{ slug: string }>();
-    const [demoData] = useState(() => SLUG_MAP[slug as string] ?? null);
-    const [event, setEvent] = useState<any>(demoData?.event ?? null);
-    const [media, setMedia] = useState<any[]>(demoData?.media ?? []);
+    const [event, setEvent] = useState<any>(null);
+    const [media, setMedia] = useState<any[]>([]);
     const [selectedAlbum, setSelectedAlbum] = useState<string | 'all'>('all');
     const [lightbox, setLightbox] = useState<{ open: boolean; index: number }>({ open: false, index: 0 });
     const [slideshow, setSlideshow] = useState(false);
@@ -64,14 +55,13 @@ export default function WeddingPage() {
     const nextPhoto = () => setLightbox(l => ({ ...l, index: (l.index + 1) % filtered.length }));
 
     const loadData = useCallback(async () => {
-        if (demoData) return;
         try {
             const { eventsApi, mediaApi } = await import('@/lib/api');
             const data = await eventsApi.getBySlug(slug as string);
             setEvent(data.event);
             setMedia(data.media || []);
         } catch { /* Handle not found */ }
-    }, [slug, demoData]);
+    }, [slug]);
 
     useEffect(() => { loadData(); }, [loadData]);
 
@@ -300,63 +290,16 @@ export default function WeddingPage() {
                 </div>
             </section>
 
-            {/* ── CINEMATIC PLAYER SECTIONS ── */}
-            <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 24px' }}>
-                {/* VIDEO SECTION */}
-                {event.youtube_video_id && (
-                    <div style={{ marginBottom: 80 }}>
-                        <div style={{ textAlign: 'center', marginBottom: 32 }}>
-                            <div style={{ fontSize: 11, color: 'var(--gold)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>The Wedding Film</div>
-                            <div style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 300, color: 'var(--cream)' }}>Our Story Forever</div>
-                        </div>
-                        <div style={{ position: 'relative', width: '100%', aspectRatio: '16/9', borderRadius: 24, overflow: 'hidden', border: '1px solid var(--border-subtle)', boxShadow: '0 30px 60px -12px rgba(0,0,0,0.5)' }}>
-                            <iframe
-                                width="100%" height="100%"
-                                src={`https://www.youtube.com/embed/${event.youtube_video_id}?autoplay=0&rel=0&modestbranding=1&iv_load_policy=3&showinfo=0&controls=1&color=white`}
-                                title="Wedding Film" frameBorder="0"
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                allowFullScreen
-                                style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
-                            />
-                            {/* Overlay to hide YouTube bottom branding bar */}
-                            <div style={{
-                                position: 'absolute', bottom: 0, left: 0, right: 0, height: 42,
-                                background: '#000',
-                                pointerEvents: 'none',
-                                opacity: 0,
-                                transition: 'opacity 0.2s',
-                            }}
-                                onMouseEnter={e => { e.currentTarget.style.opacity = '0'; }}
-                            />
-                        </div>
-                    </div>
-                )}
-
-                {/* LIVE SECTION */}
-                {event.youtube_live_id && (
-                    <div id="live-section" style={{ marginBottom: 80 }}>
-                        <div style={{ textAlign: 'center', marginBottom: 32 }}>
-                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '4px 12px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 20, fontSize: 10, fontWeight: 800, color: '#EF4444', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-                                <span style={{ width: 4, height: 4, borderRadius: '50%', background: '#EF4444', animation: 'pulse 1s infinite' }} /> LIVE BROADCAST
-                            </div>
-                            <div style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 300, color: 'var(--cream)' }}>Witness the Union</div>
-                        </div>
-                        <div style={{ position: 'relative', width: '100%', aspectRatio: '16/9', borderRadius: 24, overflow: 'hidden', border: '2px solid rgba(239,68,68,0.2)', boxShadow: '0 30px 60px -12px rgba(239,68,68,0.1)' }}>
-                            <iframe
-                                width="100%" height="100%"
-                                src={`https://www.youtube.com/embed/${event.youtube_live_id}?autoplay=1&rel=0&modestbranding=1&iv_load_policy=3&showinfo=0&color=white`}
-                                title="Live Wedding" frameBorder="0"
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                allowFullScreen
-                                style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
-                            />
-                        </div>
-                    </div>
-                )}
-            </div>
-
-            {/* ── GALLERY ── */}
+            {/* ── GALLERY (first per layout spec: images → videos → live) ── */}
             <section style={{ padding: '80px 24px', maxWidth: 1400, margin: '0 auto' }}>
+                {/* Section header */}
+                <div style={{ textAlign: 'center', marginBottom: 40 }}>
+                    <div style={{ fontSize: 11, color: 'var(--gold)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>Gallery</div>
+                    <div style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 300, color: 'var(--cream)', marginBottom: 8 }}>
+                        Captured Moments
+                    </div>
+                </div>
+
                 {/* Album tabs */}
                 {event.albums?.length > 0 && (
                     <div style={{ display: 'flex', gap: 8, marginBottom: 40, flexWrap: 'wrap', justifyContent: 'center' }}>
@@ -398,7 +341,7 @@ export default function WeddingPage() {
                                 style={{ cursor: 'pointer' }}
                             >
                                 <img
-                                    src={photo.thumbnailUrl || photo.url}
+                                    src={photo.thumbnail_url || photo.thumbnailUrl || photo.url}
                                     alt=""
                                     loading="lazy"
                                     style={{ width: '100%', display: 'block' }}
@@ -419,6 +362,51 @@ export default function WeddingPage() {
                     </div>
                 )}
             </section>
+
+            {/* ── VIDEO + LIVE SECTIONS (below gallery) ── */}
+            <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 24px 80px' }}>
+                {/* VIDEO SECTION */}
+                {event.youtube_video_id && (
+                    <div style={{ marginBottom: 80 }}>
+                        <div style={{ textAlign: 'center', marginBottom: 32 }}>
+                            <div style={{ fontSize: 11, color: 'var(--gold)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>The Wedding Film</div>
+                            <div style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 300, color: 'var(--cream)' }}>Our Story Forever</div>
+                        </div>
+                        <div style={{ position: 'relative', width: '100%', aspectRatio: '16/9', borderRadius: 24, overflow: 'hidden', border: '1px solid var(--border-subtle)', boxShadow: '0 30px 60px -12px rgba(0,0,0,0.5)' }}>
+                            <iframe
+                                width="100%" height="100%"
+                                src={`https://www.youtube.com/embed/${event.youtube_video_id}?autoplay=0&rel=0&modestbranding=1&iv_load_policy=3&showinfo=0&controls=1&color=white`}
+                                title="Wedding Film" frameBorder="0"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowFullScreen
+                                style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
+                            />
+                        </div>
+                    </div>
+                )}
+
+                {/* LIVE SECTION */}
+                {event.youtube_live_id && (
+                    <div id="live-section" style={{ marginBottom: 80 }}>
+                        <div style={{ textAlign: 'center', marginBottom: 32 }}>
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '4px 12px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 20, fontSize: 10, fontWeight: 800, color: '#EF4444', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                                <span style={{ width: 4, height: 4, borderRadius: '50%', background: '#EF4444', animation: 'pulse 1s infinite' }} /> LIVE BROADCAST
+                            </div>
+                            <div style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 300, color: 'var(--cream)' }}>Witness the Union</div>
+                        </div>
+                        <div style={{ position: 'relative', width: '100%', aspectRatio: '16/9', borderRadius: 24, overflow: 'hidden', border: '2px solid rgba(239,68,68,0.2)', boxShadow: '0 30px 60px -12px rgba(239,68,68,0.1)' }}>
+                            <iframe
+                                width="100%" height="100%"
+                                src={`https://www.youtube.com/embed/${event.youtube_live_id}?autoplay=1&rel=0&modestbranding=1&iv_load_policy=3&showinfo=0&color=white`}
+                                title="Live Wedding" frameBorder="0"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowFullScreen
+                                style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
+                            />
+                        </div>
+                    </div>
+                )}
+            </div>
 
             {/* ── MEMORY CTA ── */}
             <section style={{

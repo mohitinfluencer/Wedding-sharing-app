@@ -87,25 +87,43 @@ export default function EventManagerPage() {
     const getFiltered = () => selectedAlbum === 'all' ? media : media.filter(m => m.albumId === selectedAlbum);
 
     const handleFileUpload = async (files: FileList) => {
-        if (isDemoMode) {
-            toast.success('Upload works in production! Connect Cloudinary API keys.', { icon: '⚡' });
-            return;
-        }
         if (!event) return;
         const albumId = selectedAlbum !== 'all' ? selectedAlbum : undefined;
         for (const file of Array.from(files)) {
-            if (file.size > 50 * 1024 * 1024) { toast.error(`${file.name} is too large`); continue; }
+            if (file.size > 50 * 1024 * 1024) { toast.error(`${file.name} is too large (max 50MB)`); continue; }
             setUploading(true); setUploadProgress(0);
             try {
                 const params = await mediaApi.initUpload(event.id, albumId);
+                if (!params.uploadUrl || !params.uploadPreset) {
+                    throw new Error('Cloudinary is not configured. Check NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME and NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET in Vercel settings.');
+                }
                 const result = await mediaApi.uploadToCloudinary(file, params, setUploadProgress);
-                await mediaApi.completeUpload({ eventId: event.id, albumId, providerId: result.public_id, url: result.secure_url, width: result.width, height: result.height, type: file.type.startsWith('video/') ? 'video' : 'photo' });
+                if (!result.secure_url) throw new Error('Upload completed but no URL returned from Cloudinary');
+
+                // Generate thumbnail URL from Cloudinary transformations
+                const thumbnailUrl = result.secure_url.replace('/upload/', '/upload/c_fill,w_400,h_400,q_80/');
+
+                await mediaApi.completeUpload({
+                    eventId: event.id,
+                    albumId,
+                    providerId: result.public_id,
+                    url: result.secure_url,
+                    thumbnailUrl,
+                    width: result.width,
+                    height: result.height,
+                    type: file.type.startsWith('video/') ? 'video' : 'photo',
+                });
                 toast.success(`${file.name} uploaded!`);
                 await loadData();
-            } catch { toast.error(`Failed to upload ${file.name}`); }
+            } catch (err: any) {
+                const msg = err?.response?.data?.error?.message || err?.message || 'Upload failed';
+                toast.error(msg);
+                console.error('Upload error:', err);
+            }
             finally { setUploading(false); }
         }
     };
+
 
     const toggleHide = async (m: any) => {
         if (isDemoMode) { setMedia(p => p.map(x => x.id === m.id ? { ...x, hidden: !x.hidden } : x)); toast.success(m.hidden ? 'Photo shown' : 'Photo hidden'); return; }
@@ -193,12 +211,7 @@ export default function EventManagerPage() {
                     </div>
                 </div>
 
-                {/* Demo banner inline */}
-                {isDemoMode && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 10px', background: 'var(--surface-frost)', border: '1px solid var(--border-accent)', borderRadius: 'var(--radius-sm)', fontSize: 11, color: 'var(--gold)', whiteSpace: 'nowrap' }}>
-                        <Zap size={10} />Demo Mode — edits work locally
-                    </div>
-                )}
+
 
                 {/* Actions */}
                 <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
@@ -355,26 +368,37 @@ export default function EventManagerPage() {
                                                 style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', display: 'block', opacity: m.hidden ? 0.35 : 1, filter: m.hidden ? 'grayscale(70%)' : 'none', transition: 'transform 0.3s' }}
                                             />
                                             <div className="gallery-overlay" />
-                                            {/* Action buttons on hover */}
+                                            {/* Hide / Star buttons on hover — centered */}
                                             <div style={{
                                                 position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
                                                 opacity: 0, transition: 'opacity 0.2s',
                                             }}
                                                 className="photo-actions"
-                                                onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.opacity = '1'; }}
-                                                onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.opacity = '0'; }}
                                                 onClick={e => e.stopPropagation()}
                                             >
-                                                <button onClick={() => toggleHide(m)} style={{ padding: 7, background: 'rgba(0,0,0,0.7)', border: 'none', borderRadius: 6, cursor: 'pointer', color: '#fff', display: 'flex', backdropFilter: 'blur(4px)' }} title={m.hidden ? 'Show' : 'Hide'}>
+                                                <button onClick={() => toggleHide(m)} style={{ padding: 7, background: 'rgba(0,0,0,0.75)', border: 'none', borderRadius: 6, cursor: 'pointer', color: '#fff', display: 'flex', backdropFilter: 'blur(4px)' }} title={m.hidden ? 'Show' : 'Hide'}>
                                                     {m.hidden ? <Eye size={13} /> : <EyeOff size={13} />}
                                                 </button>
-                                                <button onClick={() => toggleHighlight(m)} style={{ padding: 7, background: m.highlight ? 'rgba(201,151,74,0.5)' : 'rgba(0,0,0,0.7)', border: 'none', borderRadius: 6, cursor: 'pointer', color: '#fff', display: 'flex', backdropFilter: 'blur(4px)' }}>
+                                                <button onClick={() => toggleHighlight(m)} style={{ padding: 7, background: m.highlight ? 'rgba(201,151,74,0.5)' : 'rgba(0,0,0,0.75)', border: 'none', borderRadius: 6, cursor: 'pointer', color: '#fff', display: 'flex', backdropFilter: 'blur(4px)' }}>
                                                     {m.highlight ? <Star size={13} style={{ fill: 'var(--gold)' }} /> : <StarOff size={13} />}
                                                 </button>
-                                                <button onClick={() => deleteMedia(m)} style={{ padding: 7, background: 'rgba(0,0,0,0.7)', border: 'none', borderRadius: 6, cursor: 'pointer', color: '#F87171', display: 'flex', backdropFilter: 'blur(4px)' }}>
-                                                    <Trash2 size={13} />
-                                                </button>
                                             </div>
+                                            {/* Delete button — bottom right, separate from center actions to avoid accidents */}
+                                            <button
+                                                className="photo-delete-btn"
+                                                onClick={e => { e.stopPropagation(); deleteMedia(m); }}
+                                                style={{
+                                                    position: 'absolute', bottom: 6, right: 6,
+                                                    padding: '5px 7px', background: 'rgba(180,30,30,0.85)',
+                                                    border: '1px solid rgba(255,100,100,0.3)',
+                                                    borderRadius: 6, cursor: 'pointer', color: '#fff',
+                                                    display: 'flex', backdropFilter: 'blur(4px)',
+                                                    opacity: 0, transition: 'opacity 0.2s',
+                                                }}
+                                                title="Delete photo"
+                                            >
+                                                <Trash2 size={12} />
+                                            </button>
                                             {/* Status badges */}
                                             {m.highlight && <div style={{ position: 'absolute', top: 6, left: 6 }}><Star size={12} style={{ color: 'var(--gold)', fill: 'var(--gold)', filter: 'drop-shadow(0 0 3px rgba(0,0,0,0.8))' }} /></div>}
                                             {m.hidden && <div style={{ position: 'absolute', top: 6, right: 6 }}><EyeOff size={11} style={{ color: 'rgba(255,255,255,0.7)' }} /></div>}
@@ -473,8 +497,17 @@ export default function EventManagerPage() {
                             </div>
                             {event?.youtube_video_id && (
                                 <div>
-                                    <div style={{ fontSize: 11, color: 'var(--gold)', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 14 }}>
-                                        <Check size={12} /> Currently attached: {event.youtube_video_id}
+                                    <div style={{ fontSize: 11, color: 'var(--gold)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, marginBottom: 14 }}>
+                                        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Check size={12} /> Attached: {event.youtube_video_id}</span>
+                                        <button
+                                            onClick={async () => {
+                                                if (!confirm('Remove this video?')) return;
+                                                try { await eventsApi.update(event.id, { youtube_video_id: null }); toast.success('Video removed'); loadData(); } catch { toast.error('Failed'); }
+                                            }}
+                                            style={{ padding: '4px 10px', background: 'rgba(180,30,30,0.12)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 6, cursor: 'pointer', color: '#F87171', fontSize: 11, display: 'flex', alignItems: 'center', gap: 4 }}
+                                        >
+                                            <Trash2 size={11} /> Remove
+                                        </button>
                                     </div>
                                     {/* Live YouTube Preview */}
                                     <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0, borderRadius: 12, overflow: 'hidden', background: '#000' }}>
@@ -521,8 +554,17 @@ export default function EventManagerPage() {
                                 </button>
                             </div>
                             {event?.youtube_live_id && (
-                                <div style={{ fontSize: 11, color: '#F87171', display: 'flex', alignItems: 'center', gap: 6 }}>
-                                    <Check size={12} /> Live Hook Active: {event.youtube_live_id}
+                                <div style={{ fontSize: 11, color: '#F87171', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Check size={12} /> Live Active: {event.youtube_live_id}</span>
+                                    <button
+                                        onClick={async () => {
+                                            if (!confirm('Stop live stream and remove it?')) return;
+                                            try { await eventsApi.update(event.id, { youtube_live_id: null }); toast.success('Live stream removed'); loadData(); } catch { toast.error('Failed'); }
+                                        }}
+                                        style={{ padding: '4px 10px', background: 'rgba(180,30,30,0.12)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 6, cursor: 'pointer', color: '#F87171', fontSize: 11, display: 'flex', alignItems: 'center', gap: 4 }}
+                                    >
+                                        <Trash2 size={11} /> Stop & Remove
+                                    </button>
                                 </div>
                             )}
                         </div>
@@ -654,7 +696,7 @@ export default function EventManagerPage() {
 
             <style>{`
         .gallery-item:hover .photo-actions { opacity: 1 !important; }
-        .photo-actions:hover { opacity: 1 !important; }
+        .gallery-item:hover .photo-delete-btn { opacity: 1 !important; }
       `}</style>
         </div>
     );

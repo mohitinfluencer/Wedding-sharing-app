@@ -112,24 +112,74 @@
 
 /* ── Light editorial theme ── */
 [data-theme="light"] {
-  --bg-base: var(--ivory);
-  --bg-raised: #EFEBE3;
-  --bg-sunken: var(--cream);
-  --surface: rgba(245, 240, 232, 0.9);
-  --surface-2: rgba(232, 213, 180, 0.5);
-  --surface-glass: rgba(245, 240, 232, 0.85);
-  --surface-frost: rgba(201, 151, 74, 0.08);
-  --text-primary: var(--charcoal);
-  --text-secondary: var(--stone);
-  --text-tertiary: var(--driftwood);
-  --text-muted: var(--silk);
+  --bg-base: #F5F0E8;
+  --bg-raised: #EDE8DF;
+  --bg-sunken: #E8E0D4;
+  --surface: #FFFFFF;
+  --surface-2: rgba(232, 213, 180, 0.4);
+  --surface-glass: rgba(245, 240, 232, 0.92);
+  --surface-frost: rgba(201, 151, 74, 0.1);
+  --text-primary: #1C1916;
+  --text-secondary: #3A342C;
+  --text-tertiary: #6B5E52;
+  --text-muted: #8B7D6E;
   --text-accent: var(--gold-dark);
   --border-subtle: rgba(58, 52, 44, 0.1);
-  --border-muted: rgba(58, 52, 44, 0.16);
+  --border-muted: rgba(58, 52, 44, 0.18);
+  --border-accent: rgba(154, 114, 52, 0.4);
+  --border-strong: rgba(154, 114, 52, 0.7);
   --shadow-sm: 0 2px 8px rgba(58, 52, 44, 0.08);
   --shadow-md: 0 8px 32px rgba(58, 52, 44, 0.12);
   --shadow-lg: 0 20px 60px rgba(58, 52, 44, 0.15);
+  --shadow-gold: 0 8px 40px rgba(154, 114, 52, 0.15);
+  --cream: #3A342C;
+  --ivory: #1C1916;
+  --obsidian: #F5F0E8;
 }
+
+/* Light mode sidebar */
+[data-theme="light"] .sidebar {
+  background: #FFFFFF;
+  border-right-color: rgba(58, 52, 44, 0.12);
+}
+
+/* Light mode inputs */
+[data-theme="light"] .input {
+  background: #FFFFFF;
+  border-color: rgba(58, 52, 44, 0.2);
+  color: #1C1916;
+}
+
+[data-theme="light"] .input:focus {
+  border-color: var(--gold-dark);
+  box-shadow: 0 0 0 3px rgba(154, 114, 52, 0.12);
+}
+
+/* Light mode cards */
+[data-theme="light"] .stat-card,
+[data-theme="light"] .card-flat {
+  background: #FFFFFF;
+  border-color: rgba(58, 52, 44, 0.1);
+}
+
+/* Light mode buttons */
+[data-theme="light"] .btn-ghost {
+  background: rgba(58, 52, 44, 0.06);
+  border-color: rgba(58, 52, 44, 0.15);
+  color: #3A342C;
+}
+
+/* Light mode nav items */
+[data-theme="light"] .sidebar-nav-item {
+  color: #6B5E52;
+}
+
+[data-theme="light"] .sidebar-nav-item.active,
+[data-theme="light"] .sidebar-nav-item:hover {
+  background: rgba(201, 151, 74, 0.1);
+  color: var(--gold-dark);
+}
+
 
 /* ═══════════════════════════════════════════════════════════════
    GLOBAL BASE
